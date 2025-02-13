@@ -1,42 +1,39 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
+import express from "express";
+import dotenv from "dotenv";
+import bodyParser from "body-parser";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
+import authRoutes from "./routes/auth.route.js"; // need to add extension when importing a local file
+import productRoutes from "./routes/product.route.js";
+import cartRoutes from "./routes/cart.route.js";
+import paymentRoutes from "./routes/payment.route.js";
+import { rateLimit } from "express-rate-limit";
+import { connectDB } from "./lib/db.js";
+
+dotenv.config();
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+
+console.log(process.env.PORT);
 
 app.use(cors()); // for cross origin requests
 app.use(bodyParser.json());
+app.use(cookieParser());
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/payments", paymentRoutes);
 
-// Home Page,
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to the Home Page!" });
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
 });
 
-// Signup Page
-app.post("/signup", (req, res) => {
-  const { username, email, password } = req.body;
-  // To-Do - save user info to database at this point
-  res.json({
-    message: "User signed up successfully!",
-    user: { username, email },
-  });
-});
-
-// Login Page
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-  // To-Do - Check user credentials against database
-  res.json({ message: "User logged in successfully!", user: { email } });
-});
-
-// Admin Login
-app.post("/admin/login", (req, res) => {
-  const { email, password } = req.body;
-  // To-Do - Check admin credentials
-  res.json({ message: "Admin logged in successfully!", user: { email } });
-});
+// Apply the rate limiting middleware to all requests.
+app.use(limiter);
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${process.env.PORT}`);
+  connectDB();
 });
